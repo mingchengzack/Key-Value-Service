@@ -29,6 +29,9 @@ import (
 	"../labrpc"
 )
 
+// import "bytes"
+// import "../labgob"
+
 // ApplyMsg defines structure below
 // as each Raft peer becomes aware that successive Log entries are
 // committed, the peer should send an ApplyMsg to the service (or
@@ -401,10 +404,12 @@ func (rf *Raft) checkCommit() {
 			rf.cond.Wait() // Should wakes up after commitIndex changes
 		}
 
-		// Applied Log entries to local state
-		rf.apply(rf.Log[rf.lastApplied:rf.commitIndex])
+		l := rf.Log[rf.lastApplied:rf.commitIndex]
 		rf.lastApplied = rf.commitIndex
 		rf.mu.Unlock()
+
+		// Applied Log entries to local state
+		rf.apply(l)
 	}
 }
 

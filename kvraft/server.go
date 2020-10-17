@@ -1,7 +1,6 @@
 package kvraft
 
 import (
-	"log"
 	"sync"
 	"sync/atomic"
 
@@ -10,21 +9,28 @@ import (
 	"../raft"
 )
 
-const Debug = 0
+// OpType defines the type of operation
+type OpType int
 
-func DPrintf(format string, a ...interface{}) (n int, err error) {
-	if Debug > 0 {
-		log.Printf(format, a...)
-	}
-	return
-}
+const (
+	// Get op
+	Get OpType = iota
 
+	// Put op
+	Put
+
+	// Append op
+	Append
+)
+
+// Op defines
 type Op struct {
-	// Your definitions here.
-	// Field names must start with capital letters,
-	// otherwise RPC will break.
+	Key   string
+	Value string
+	Type  OpType
 }
 
+// KVServer defines the key/value server with raft
 type KVServer struct {
 	mu      sync.Mutex
 	me      int
@@ -34,18 +40,21 @@ type KVServer struct {
 
 	maxraftstate int // snapshot if log grows this big
 
-	// Your definitions here.
+	// The underlying database of the server, can use real database for production
+	database map[string]string
 }
 
+// Get defines the RPC handler for get method from client
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
 }
 
+// PutAppend defines the RPC for put or append method from client
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
 }
 
-//
+// Kill kills the server
 // the tester calls Kill() when a KVServer instance won't
 // be needed again. for your convenience, we supply
 // code to set rf.dead (without needing a lock),
@@ -61,12 +70,13 @@ func (kv *KVServer) Kill() {
 	// Your code here, if desired.
 }
 
+// killed check if the server is dead
 func (kv *KVServer) killed() bool {
 	z := atomic.LoadInt32(&kv.dead)
 	return z == 1
 }
 
-//
+// StartKVServer creates a key/value server and starts it running
 // servers[] contains the ports of the set of
 // servers that will cooperate via Raft to
 // form the fault-tolerant key/value service.
@@ -88,8 +98,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv := new(KVServer)
 	kv.me = me
 	kv.maxraftstate = maxraftstate
-
-	// You may need initialization code here.
+	kv.database = make(map[string]string)
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
